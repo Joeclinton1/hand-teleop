@@ -10,6 +10,7 @@ from hand_teleop.hand_pose.factory import (
     ModelName,
     create_estimator,
 )
+from hand_teleop.hand_pose.estimators.base import HandPoseEstimator
 from hand_teleop.hand_pose.types import TrackedHandKeypoints
 
 
@@ -26,8 +27,9 @@ class GripperPoseComputer:
         device: Optional[str] = None,
         model: ModelName = "wilor",
         hand: Literal["left", "right"] = "right",
+        estimator: Optional[HandPoseEstimator] = None,
     ):
-        self.estimator = create_estimator(model, device=device)
+        self.estimator = estimator or create_estimator(model, device=device)
         self.hand = hand
 
         self.initial_pose: Optional[GripperPose] = None

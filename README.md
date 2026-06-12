@@ -157,6 +157,24 @@ python main.py
 
 ---
 
+## LeRobot Integration
+
+The package also exposes `DualHandTracker` for integrations that need both hands from one webcam/model pass. In the `gem` branch of my LeRobot fork, use `--teleop.type=hand_teleop` to drive a GEM-compatible leader action from hand tracking.
+
+For a physical single GEM arm, use one hand:
+
+```bash
+lerobot-teleoperate --robot.type=gem --teleop.type=hand_teleop --teleop.hand=right
+```
+
+For the robot-arm viewer with two hands, use viewer-only bimanual mode:
+
+```bash
+lerobot-teleoperate --robot.type=gem --viewer.enabled=true --viewer.only=true --teleop.type=hand_teleop --teleop.hand=both
+```
+
+---
+
 ## Controls
 
 * `p` — Pause/resume

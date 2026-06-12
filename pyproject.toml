@@ -7,7 +7,7 @@ license = "Apache-2.0"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "3.10.*"
+python = ">=3.10,<3.13"
 numpy = "^1.23.0"
 pydantic = "^1.10.0"
 pynput = "^1.7"

@@ -20,7 +20,6 @@ from hand_teleop.gripper_pose.gripper_pose import GripperPose
 from hand_teleop.gripper_pose.gripper_pose_computer import GripperPoseComputer
 from hand_teleop.gripper_pose.gripper_pose_visualizer import GripperPoseVisualizer
 from hand_teleop.hand_pose.factory import ModelName
-from hand_teleop.kinematics.kinematics import RobotKinematics
 from hand_teleop.tracking.kalman_filter import KalmanXYZ
 
 DEFAULT_CAM_T = np.array([0, -0.24, 0.6], dtype=np.float32)
@@ -72,7 +71,7 @@ class HandTracker:
         )
 
         self.robot_kin = (
-            RobotKinematics(urdf_path=urdf_path, frame_name=frame_name)
+            self._make_robot_kinematics(urdf_path, frame_name)
             if urdf_path is not None
             else None
         )
@@ -241,6 +240,12 @@ class HandTracker:
         self._scroll_open = float(
             np.clip(self._scroll_open + dy * self.scroll_scale * 90, 0.0, 90.0)
         )
+
+    @staticmethod
+    def _make_robot_kinematics(urdf_path: str, frame_name: str):
+        from hand_teleop.kinematics.kinematics import RobotKinematics
+
+        return RobotKinematics(urdf_path=urdf_path, frame_name=frame_name)
 
     # ------------------------------------------------------------------
     # Internal helper – predict only
