@@ -31,6 +31,14 @@ My fork is outdated now, and I am working to get it working with the newest veri
 pip install "hand-teleop @ git+https://github.com/joeclinton1/hand-teleop.git#egg=hand-teleop[wilor]"
 ```
 
+This extra installs WiLoR from my fork:
+
+```toml
+wilor-mini = { git = "https://github.com/Joeclinton1/WiLoR-mini", optional = true }
+```
+
+The fork ports upstream WiLoR's fast inference path into WiLoR-mini. CUDA WiLoR uses this path by default in `hand-teleop`, enabling fp16 inference and the upstream ViT depth-pruning block skip.
+
 > ✅ **Works well out of the box**
 > ⚠️ **Requires GPU with CUDA**
 
