@@ -20,6 +20,7 @@ from hand_teleop.tracking.kalman_filter import KalmanXYZ
 from hand_teleop.tracking.tracker import DEFAULT_CAM_T
 
 HandName = Literal["left", "right"]
+REALIGN_VISIBLE_SECONDS = 1.0
 
 
 @dataclass
@@ -30,6 +31,7 @@ class _TrackedHandState:
     initial_pose: Optional[GripperPose] = None
     base_pose: Optional[GripperPose] = None
     last_final_pose: Optional[GripperPose] = None
+    realign_visible_since: Optional[float] = None
 
 
 class DualHandPoseComputer:
@@ -111,6 +113,7 @@ class DualHandTracker:
         }
         self._lock = threading.Lock()
         self.tracking_paused = start_paused
+        self._realign_pending: set[HandName] = set()
 
         self._stop = threading.Event()
         self._listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)
@@ -127,12 +130,18 @@ class DualHandTracker:
                 continue
 
             frame = cv2.flip(frame, 1)
-            if not self.tracking_paused:
+            abs_poses: dict[HandName, GripperPose] = {}
+            if not self.tracking_paused or self._realign_pending:
                 abs_poses = self.pose_computer.compute_absolute_poses(
                     frame,
                     self.focal_ratio * frame.shape[1],
                     self.cam_t,
                 )
+
+            if self._realign_pending:
+                self._update_realign(abs_poses)
+
+            if not self.tracking_paused:
                 for hand, abs_pose in abs_poses.items():
                     self._update_hand(hand, abs_pose)
 
@@ -151,7 +160,7 @@ class DualHandTracker:
                 )
                 cv2.putText(
                     frame,
-                    "Press 'p' to pause | Hold SPACE to realign",
+                    "Press 'p' to pause | Press SPACE to realign",
                     (10, frame.shape[0] - 10),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.6,
@@ -160,6 +169,34 @@ class DualHandTracker:
                 )
                 cv2.imshow("dual-hand-teleop", frame)
                 cv2.waitKey(1)
+
+    def _update_realign(self, abs_poses: dict[HandName, GripperPose]) -> None:
+        now = time.perf_counter()
+        with self._lock:
+            for hand in tuple(self._realign_pending):
+                state = self._hands[hand]
+                abs_pose = abs_poses.get(hand)
+                if abs_pose is None:
+                    state.realign_visible_since = None
+                    continue
+
+                if state.realign_visible_since is None:
+                    state.realign_visible_since = now
+                    continue
+
+                if now - state.realign_visible_since < REALIGN_VISIBLE_SECONDS:
+                    continue
+
+                state.kf.reset()
+                state.kf_t = now
+                state.prev_rel_pose = GripperPose.zero()
+                state.initial_pose = abs_pose.copy()
+                state.base_pose = None
+                state.realign_visible_since = None
+                self._realign_pending.remove(hand)
+
+            if not self._realign_pending:
+                self.tracking_paused = False
 
     def _update_hand(self, hand: HandName, abs_pose: GripperPose) -> None:
         with self._lock:
@@ -186,13 +223,12 @@ class DualHandTracker:
 
     def _on_press(self, key):
         if key == keyboard.Key.space:
-            self._pause()
+            self._request_realign()
         elif key == keyboard.KeyCode.from_char("p"):
             self._resume() if self.tracking_paused else self._pause()
 
     def _on_release(self, key):
-        if key == keyboard.Key.space:
-            self._resume()
+        _ = key
 
     def _pause(self) -> None:
         self.tracking_paused = True
@@ -202,6 +238,7 @@ class DualHandTracker:
 
     def _resume(self) -> None:
         self.tracking_paused = False
+        self._realign_pending.clear()
         with self._lock:
             now = time.perf_counter()
             for state in self._hands.values():
@@ -210,6 +247,21 @@ class DualHandTracker:
                 state.prev_rel_pose = GripperPose.zero()
                 state.initial_pose = None
                 state.base_pose = None
+                state.realign_visible_since = None
+        self.pose_computer.reset()
+
+    def _request_realign(self) -> None:
+        self.tracking_paused = True
+        self._realign_pending = {"left", "right"}
+        with self._lock:
+            now = time.perf_counter()
+            for state in self._hands.values():
+                state.kf.reset()
+                state.kf_t = now
+                state.prev_rel_pose = GripperPose.zero()
+                state.initial_pose = None
+                state.base_pose = None
+                state.realign_visible_since = None
         self.pose_computer.reset()
 
     def _predict_only(self, hand: HandName) -> None:
