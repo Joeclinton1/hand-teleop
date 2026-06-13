@@ -8,8 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
-numpy = "^1.23.0"
-pydantic = "^1.10.0"
+numpy = ">=1.23,<3"
 pynput = "^1.7"
 opencv-python = "*"
 

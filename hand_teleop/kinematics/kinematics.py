@@ -1,8 +1,12 @@
 # ruff: noqa: N806
 
 import os
+import sys
 
 import numpy as np
+
+if sys.platform == "win32":
+    os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 try:
     import pinocchio as pin

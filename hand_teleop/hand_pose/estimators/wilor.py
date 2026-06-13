@@ -1,6 +1,12 @@
+import os
+import sys
 from typing import Optional
 
 import numpy as np
+
+if sys.platform == "win32":
+    os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
 from wilor_mini.pipelines.wilor_hand_pose3d_estimation_pipeline import (
     WiLorHandPose3dEstimationPipeline,
 )
