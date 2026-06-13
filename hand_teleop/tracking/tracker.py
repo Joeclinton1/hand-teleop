@@ -303,9 +303,16 @@ class HandTracker:
                 "robot_kin is not initialized. Pass a URDF to use this function."
             )
 
-        # Convert base joint angles to radians for kinematics
-        arm_joints_rad = np.radians(base_pose_joint[:5])
-        gripper_val = float(base_pose_joint[5])  # gripper remains in degrees
+        arm_dof = self.robot_kin.nq
+        if len(base_pose_joint) < arm_dof + 1:
+            raise ValueError(
+                f"Expected at least {arm_dof + 1} base joint values for {self.robot_kin.urdf_path}, "
+                f"got {len(base_pose_joint)}."
+            )
+
+        # Convert base joint angles to radians for kinematics.
+        arm_joints_rad = np.radians(base_pose_joint[:arm_dof])
+        gripper_val = float(base_pose_joint[arm_dof])  # gripper remains in degrees
 
         # Forward kinematics in radians
         base_pose = self.robot_kin.fk(arm_joints_rad)

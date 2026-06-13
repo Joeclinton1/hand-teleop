@@ -246,8 +246,15 @@ class DualHandTracker:
         if self.robot_kin is None:
             raise RuntimeError("robot_kin is not initialized. Pass a URDF to use this function.")
 
-        arm_joints_rad = np.radians(base_pose_joint[:5])
-        gripper_val = float(base_pose_joint[5])
+        arm_dof = self.robot_kin.nq
+        if len(base_pose_joint) < arm_dof + 1:
+            raise ValueError(
+                f"Expected at least {arm_dof + 1} base joint values for {self.robot_kin.urdf_path}, "
+                f"got {len(base_pose_joint)}."
+            )
+
+        arm_joints_rad = np.radians(base_pose_joint[:arm_dof])
+        gripper_val = float(base_pose_joint[arm_dof])
         base_pose = self.robot_kin.fk(arm_joints_rad)
         base_gripper_pose = GripperPose.from_matrix(base_pose, open_degree=gripper_val)
         final_gripper_pose = self.read_hand_state(hand, base_gripper_pose)

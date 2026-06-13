@@ -28,6 +28,7 @@ class RobotKinematics:
         self.data = self.model.createData()
         self.frame_id = self.model.getFrameId(frame_name)
         self.frame_name = frame_name
+        self.nq = self.model.nq
 
     # ---------- Forward kinematics ----------
     def fk(self, q, frame: str | None = None):
