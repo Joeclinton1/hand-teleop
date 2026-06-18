@@ -20,7 +20,6 @@ from hand_teleop.gripper_pose.gripper_pose import GripperPose
 from hand_teleop.gripper_pose.gripper_pose_computer import GripperPoseComputer
 from hand_teleop.gripper_pose.gripper_pose_visualizer import GripperPoseVisualizer
 from hand_teleop.hand_pose.factory import ModelName
-from hand_teleop.kinematics.kinematics import RobotKinematics
 from hand_teleop.tracking.kalman_filter import KalmanXYZ
 
 DEFAULT_CAM_T = np.array([0, -0.24, 0.6], dtype=np.float32)
@@ -72,7 +71,7 @@ class HandTracker:
         )
 
         self.robot_kin = (
-            RobotKinematics(urdf_path=urdf_path, frame_name=frame_name)
+            self._make_robot_kinematics(urdf_path, frame_name)
             if urdf_path is not None
             else None
         )
@@ -242,6 +241,12 @@ class HandTracker:
             np.clip(self._scroll_open + dy * self.scroll_scale * 90, 0.0, 90.0)
         )
 
+    @staticmethod
+    def _make_robot_kinematics(urdf_path: str, frame_name: str):
+        from hand_teleop.kinematics.kinematics import RobotKinematics
+
+        return RobotKinematics(urdf_path=urdf_path, frame_name=frame_name)
+
     # ------------------------------------------------------------------
     # Internal helper – predict only
     # ------------------------------------------------------------------
@@ -298,9 +303,16 @@ class HandTracker:
                 "robot_kin is not initialized. Pass a URDF to use this function."
             )
 
-        # Convert base joint angles to radians for kinematics
-        arm_joints_rad = np.radians(base_pose_joint[:5])
-        gripper_val = float(base_pose_joint[5])  # gripper remains in degrees
+        arm_dof = self.robot_kin.nq
+        if len(base_pose_joint) < arm_dof + 1:
+            raise ValueError(
+                f"Expected at least {arm_dof + 1} base joint values for {self.robot_kin.urdf_path}, "
+                f"got {len(base_pose_joint)}."
+            )
+
+        # Convert base joint angles to radians for kinematics.
+        arm_joints_rad = np.radians(base_pose_joint[:arm_dof])
+        gripper_val = float(base_pose_joint[arm_dof])  # gripper remains in degrees
 
         # Forward kinematics in radians
         base_pose = self.robot_kin.fk(arm_joints_rad)

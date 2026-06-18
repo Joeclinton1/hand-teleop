@@ -1,8 +1,12 @@
 # ruff: noqa: N806
 
 import os
+import sys
 
 import numpy as np
+
+if sys.platform == "win32":
+    os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 try:
     import pinocchio as pin
@@ -28,6 +32,7 @@ class RobotKinematics:
         self.data = self.model.createData()
         self.frame_id = self.model.getFrameId(frame_name)
         self.frame_name = frame_name
+        self.nq = self.model.nq
 
     # ---------- Forward kinematics ----------
     def fk(self, q, frame: str | None = None):

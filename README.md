@@ -31,6 +31,14 @@ My fork is outdated now, and I am working to get it working with the newest veri
 pip install "hand-teleop @ git+https://github.com/joeclinton1/hand-teleop.git#egg=hand-teleop[wilor]"
 ```
 
+This extra installs WiLoR from my fork:
+
+```toml
+wilor-mini = { git = "https://github.com/Joeclinton1/WiLoR-mini", optional = true }
+```
+
+The fork ports upstream WiLoR's fast inference path into WiLoR-mini. CUDA WiLoR uses this path by default in `hand-teleop`, enabling fp16 inference and the upstream ViT depth-pruning block skip.
+
 > ✅ **Works well out of the box**
 > ⚠️ **Requires GPU with CUDA**
 
@@ -146,6 +154,24 @@ python main.py
 * `--cam-idx 1` — Change camera index used for the tracking
 * `--hand left` — Choose which hand to track (`left` or `right`, default: `right`)
 * `--use-scroll` — Enable scroll-based gripper control
+
+---
+
+## LeRobot Integration
+
+The package also exposes `DualHandTracker` for integrations that need both hands from one webcam/model pass. In the `gem` branch of my LeRobot fork, use `--teleop.type=hand_teleop` to drive a GEM-compatible leader action from hand tracking.
+
+For a physical single GEM arm, use one hand:
+
+```bash
+lerobot-teleoperate --robot.type=gem --teleop.type=hand_teleop --teleop.hand=right
+```
+
+For the robot-arm viewer with two hands, use viewer-only bimanual mode:
+
+```bash
+lerobot-teleoperate --robot.type=gem --viewer.enabled=true --viewer.only=true --teleop.type=hand_teleop --teleop.hand=both
+```
 
 ---
 

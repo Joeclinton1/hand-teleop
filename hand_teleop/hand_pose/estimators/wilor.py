@@ -1,6 +1,12 @@
+import os
+import sys
 from typing import Optional
 
 import numpy as np
+
+if sys.platform == "win32":
+    os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
 from wilor_mini.pipelines.wilor_hand_pose3d_estimation_pipeline import (
     WiLorHandPose3dEstimationPipeline,
 )
@@ -10,11 +16,15 @@ from hand_teleop.hand_pose.types import HandKeypointsPred, TrackedHandKeypoints
 
 
 class WiLorEstimator(HandPoseEstimator):
-    def __init__(self, device: Optional[str] = None):
+    def __init__(self, device: Optional[str] = None, fast: bool = True):
         import torch
+
+        actual_device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        use_fast = fast and str(actual_device).startswith("cuda")
         self.pipe = WiLorHandPose3dEstimationPipeline(
-            device=device or ("cuda" if torch.cuda.is_available() else "cpu"),
-            dtype=torch.float16,
+            device=actual_device,
+            dtype=torch.float16 if use_fast else torch.float32,
+            fast=use_fast,
             verbose=False,
         )
 
